@@ -1,0 +1,33 @@
+[package]
+name = "cuda-msm"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rand = "^0"
+sppark = "0.1.5"
+rand_chacha = "^0"
+ark-std = "0.3.0"
+ark-ff = "0.3.0"
+ark-ec = { version = "0.3.0", features = [ "parallel" ] }
+ark-bls12-377 = { version = "0.3.0" }
+
+[dependencies.blst]
+version = "0.3.11"
+features = [ ]
+
+[build-dependencies]
+cc = "^1.0.70"
+which = "^4.0"
+sppark = "0.1.5"
+
+[dev-dependencies]
+criterion = { version = "0.3", features = [ "html_reports" ] }
+rayon = "1.5"
+
+[[bench]]
+name = "msm"
+path = "benches/msm.rs"
+harness = false
