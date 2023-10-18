@@ -38,7 +38,7 @@ pub fn generate_points_scalars<G: AffineCurve>(
     (points, scalars)
 }
 
-fn criterion_benchmark(c: &mut Criterion) {
+fn sppark_msm_benchmark(c: &mut Criterion) {
     let bench_npow = std::env::var("BENCH_NPOW").unwrap_or("13".to_string());
     let npoints_npow = i32::from_str(&bench_npow).unwrap();
 
@@ -52,7 +52,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     
     group.bench_function(name, |b| {
         b.iter(|| {
-            let res = cuda_msm::sppark_msm::<G1Affine, G1Projective,Fr>(&points[..],&scalars[..]);
+            let res = cuda_msm::sppark_msm_gpu::<G1Affine, G1Projective,Fr>(&points[..],&scalars[..]);
             match res {
                 Ok(value) => println!("Result: {:?}", value),
                 Err(_err) => (),
@@ -63,5 +63,32 @@ fn criterion_benchmark(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, criterion_benchmark);
+fn snarkvm_benchmark(c: &mut Criterion) {
+    cuda_msm::init_gpu();
+    let bench_npow = std::env::var("BENCH_NPOW").unwrap_or("13".to_string());
+    let npoints_npow = i32::from_str(&bench_npow).unwrap();
+
+    let batches = 1;
+    let (points, scalars) = generate_points_scalars::<G1Affine>(1usize << npoints_npow);
+
+    let mut group = c.benchmark_group("cuda");
+    group.sample_size(10);
+
+    let name = format!(" msm 2**{} \n", npoints_npow);
+    
+    group.bench_function(name, |b| {
+        b.iter(|| {
+            let res = cuda_msm::msm_gpu::<G1Affine, G1Projective,Fr>(&points[..],&scalars[..]);
+            match res {
+                Ok(value) => println!("Result: {:?}", value),
+                Err(_err) => (),
+            }
+        })
+    });
+
+    group.finish();
+    cuda_msm::cleanup_gpu();
+}
+
+criterion_group!(benches, snarkvm_benchmark);
 criterion_main!(benches);

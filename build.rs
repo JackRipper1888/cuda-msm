@@ -61,10 +61,37 @@ fn main(){
         Ok(var) => which::which(var),
         Err(_) => which::which("nvcc"),
     };
-    
     if nvcc.is_ok() {
         let mut nvcc = cc::Build::new();
         nvcc.cuda(true);
+        nvcc.define("QUIET", "1");
+        nvcc.flag("-arch=sm_75");
+        nvcc.flag("-rdc=true");
+        nvcc.flag("-lineinfo");
+        nvcc.flag("-lcurand");
+        nvcc.flag("-Xcompiler").flag("-Wno-unused-function");
+        nvcc.flag("-Xcompiler").flag("-Wno-unused-parameter");
+        nvcc.flag("-Xcompiler").flag("-Wno-sign-compare");
+        nvcc.define(curve, None);
+        if let Some(def) = cc_opt {
+            nvcc.define(def, None);
+        }
+        if let Some(include) = env::var_os("DEP_BLST_C_SRC") {
+            nvcc.include(include);
+        }
+        if let Some(include) = env::var_os("DEP_SPPARK_ROOT") {
+            nvcc.include(include);
+        }
+        nvcc.file("msm-cuda/snarkvm_run.cu").compile("msmcuda");
+
+        println!("cargo:rustc-link-lib=gmp");
+        println!("cargo:rerun-if-changed=msm-cuda");
+    }
+    if nvcc.is_ok() {
+        let mut nvcc = cc::Build::new();
+        nvcc.cuda(true);
+        nvcc.define("QUIET", "1");
+        nvcc.flag("-g");
         nvcc.flag("-arch=sm_75");
         //nvcc.flag("-maxrregcount=255");
 		nvcc.flag("-Xptxas").flag("-v");
